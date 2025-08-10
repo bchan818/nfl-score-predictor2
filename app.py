@@ -1,27 +1,27 @@
-from flask import Flask, render_template, request
-app = Flask(__name__)
+# app.py
+import streamlit as st
+import pandas as pd
+import joblib
 
-# Team logos dictionary
-team_logos = {
-    "49ers": "https://static.nfl.com/static/site/img/logos/teams/SF.svg",
-    "Chiefs": "https://static.nfl.com/static/site/img/logos/teams/KC.svg",
-    "Eagles": "https://static.nfl.com/static/site/img/logos/teams/PHI.svg",
-    "Cowboys": "https://static.nfl.com/static/site/img/logos/teams/DAL.svg"
-    # Add more teams here...
-}
+# Load model
+model = joblib.load("nfl_real_model.pkl")
 
-@app.route('/')
-def home():
-    return render_template('index.html', weeks=range(1, 18))
+st.title("🏈 NFL Home Score Predictor")
 
-@app.route('/scores')
-def scores():
-    week = request.args.get('week', default=1, type=int)
-    scores_data = [
-        {"home_team": "49ers", "away_team": "Chiefs", "home_score": 27, "away_score": 24},
-        {"home_team": "Eagles", "away_team": "Cowboys", "home_score": 21, "away_score": 17}
-    ]
-    return render_template('scores.html', scores=scores_data, logos=team_logos)
+st.markdown("Predict the home team's final score based on Vegas odds.")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+spread = st.number_input("Vegas Spread (favorite):", value=-6.5)
+ou = st.number_input("Over/Under Line:", value=45.5)
+fav_is_home = st.selectbox("Is the favorite the home team?", ['Yes', 'No'])
+
+fav_is_home = 1 if fav_is_home == 'Yes' else 0
+
+if st.button("Predict Score"):
+    input_df = pd.DataFrame([{
+        'spread_favorite': spread,
+        'over_under_line': ou,
+        'fav_is_home': fav_is_home
+    }])
+
+    score = model.predict(input_df)[0]
+    st.success(f"🏆 Predicted Final Home Team Score: {score:.1f}")
